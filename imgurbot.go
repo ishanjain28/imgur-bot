@@ -7,6 +7,13 @@ import (
 	"net/http"
 	"github.com/ishanjain28/imgur-bot/botutil"
 	"github.com/ishanjain28/imgur-bot/imgur"
+	"fmt"
+	"github.com/go-redis/redis"
+	"strings"
+	"strconv"
+	"time"
+	"encoding/json"
+	"github.com/ishanjain28/imgur-bot/common"
 )
 
 var (
@@ -16,6 +23,8 @@ var (
 	HOST                = "chinguimgurbot.herokuapp.com:80"
 	IMGUR_CLIENT_ID     = ""
 	IMGUR_CLIENT_SECRET = ""
+	REDIS_URL           = ""
+	redisClient         *redis.Client
 )
 
 func init() {
@@ -49,11 +58,28 @@ func init() {
 	if IMGUR_CLIENT_SECRET == "" {
 		log.Error.Fatalln("$IMGUR_CLIENT_SECRET not set")
 	}
+
+	REDIS_URL = os.Getenv("REDISTOGO_URL")
+	if REDIS_URL == "" {
+		log.Error.Fatalln("$REDISTOGO_URLr not set")
+	}
 }
 
 func main() {
 
-	//Initalise imgur
+	var err error
+	//Parse connection string and connect to Database
+	redisOpt, err := redis.ParseURL(REDIS_URL)
+	if err != nil {
+		log.Error.Fatalln("Error in parsing $REDISTOGO_URL")
+	}
+	redisClient = redis.NewClient(redisOpt)
+	err = redisClient.Ping().Err()
+	if err != nil {
+		log.Error.Fatalln("Error in connecting to DB", err.Error())
+	}
+
+	//Initialise imgur
 	i, err := imgur.Init(imgur.Config{
 		UseFreeAPI:   true,
 		ClientID:     IMGUR_CLIENT_ID,
@@ -64,7 +90,7 @@ func main() {
 	}
 
 	//Set OAuth Endpoint
-	i.SetOAuthEndpoint("/imgur_oauth")
+	i.SetOAuthEndpoint("/imgur_oauth", catchImgurOAuthResponse)
 
 	bot, err := tbot.NewBotAPI(TOKEN)
 	if err != nil {
@@ -76,13 +102,11 @@ func main() {
 	}
 	log.Info.Printf("Authorized on account %s(@%s)\n", bot.Self.FirstName, bot.Self.UserName)
 
-	//Start HTTP Server
-	// There are two uses of this server.
-	//1. Receive messages from telegram when in production environment(it uses polling in development)
-	//2. Serve as the webhook in imgur's oauth authentication of user
+	//Initalise botutil package
+	botutil.Init(bot, i, redisClient)
 
 	go func() {
-		err := http.ListenAndServe(":"+PORT, nil)
+		err := http.ListenAndServeTLS(":"+PORT, "certificate.crt", "privatekey.key", nil)
 		if err != nil {
 			log.Error.Fatalln("Error in http server", err.Error())
 		}
@@ -145,7 +169,45 @@ func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
 func handleUpdates(bot *tbot.BotAPI, i *imgur.Imgur, u tbot.Update) {
 
 	if u.Message.IsCommand() {
-		botutil.HandleCommands(bot, i, u)
+		botutil.HandleCommands(u)
+		return
 	}
 
+	if u.Message.Text != "" {
+		fmt.Println(i.AccountBase("ishanjain28", ""))
+	}
+}
+
+func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	r.ParseForm()
+
+	state := r.Form.Get("state")
+	expiresin := r.Form.Get("expires_in")
+	refToken := r.Form.Get("refresh_token")
+	accToken := r.Form.Get("access_token")
+	username := r.Form.Get("account_username")
+	tusername := strings.Split(state, "-")[1]
+	tchatid := strings.Split(state, "-")[0]
+	expiresinInt, _ := strconv.Atoi(expiresin)
+
+	serialized, _ := json.Marshal(&common.User{
+		TChatID:      tchatid,
+		ExpiresIn:    expiresin,
+		RefreshToken: refToken,
+		AccessToken:  accToken,
+		Username:     username,
+		TUsername:    tusername,
+	})
+
+	res, err := redisClient.Set(tchatid, serialized, time.Duration(expiresinInt)*time.Second).Result()
+	if err != nil {
+		log.Warn.Println("Error in storing login information", err.Error())
+	}
+	if res == "OK" {
+		log.Info.Printf("%s logged in with imgur account %s", tusername, username)
+	}
 }
