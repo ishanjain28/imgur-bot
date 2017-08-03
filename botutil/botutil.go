@@ -8,6 +8,7 @@ import (
 	"github.com/ishanjain28/imgur-bot/common"
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
+	"strings"
 )
 
 var (
@@ -23,8 +24,9 @@ func Init(b *tbot.BotAPI, Imgur *imgur.Imgur, rClient *redis.Client) {
 }
 
 func HandleCommands(u tbot.Update) {
+	cmdArray := strings.Split(u.Message.Text, " ")
 
-	switch u.Message.Text {
+	switch cmdArray[0] {
 	case "/start":
 
 		msg := tbot.NewMessage(u.Message.Chat.ID, "")
@@ -36,11 +38,28 @@ func HandleCommands(u tbot.Update) {
 
 	case "/stats":
 
+		//Handle the case when user gives a imgur username after /stats command
+
+		if len(cmdArray) > 1 {
+			stats, err := i.AccountBase(cmdArray[1], "")
+			if err != nil {
+				ErrorResponse(u.Message.Chat.ID, err)
+				return
+			}
+
+			//Create a new common.User with just the username
+			user := &common.User{Username: cmdArray[1]}
+
+			UserStatsMessage(u.Message.Chat.ID, stats, user)
+			return
+		}
+
 		user, err := fetchUser(u.Message.Chat.ID)
 		if err != nil {
 
 			if err == redis.Nil {
-				//todo:COMPLETE THIS
+				UserNotLoggedIn(u.Message.Chat.ID)
+				return
 			}
 
 			msg := tbot.NewMessage(u.Message.Chat.ID, "Error in fetching user "+err.Error())
@@ -50,14 +69,11 @@ func HandleCommands(u tbot.Update) {
 		}
 		stats, err := i.AccountBase(user.Username, "")
 		if err != nil {
-			msg := tbot.NewMessage(u.Message.Chat.ID, "Error in fetching stats "+err.Error())
-			bot.Send(msg)
-			log.Warn.Println("Error in fetching stats", err.Error())
+			ErrorResponse(u.Message.Chat.ID, err)
 			return
 		}
 
-		msg := tbot.NewMessage(u.Message.Chat.ID, stats.Data.URL)
-		bot.Send(msg)
+		UserStatsMessage(u.Message.Chat.ID, stats, user)
 
 	case "/logout":
 	case "/help":
@@ -65,6 +81,47 @@ func HandleCommands(u tbot.Update) {
 		msg := tbot.NewMessage(u.Message.Chat.ID, "Unknown Command, Type /help to get help")
 		bot.Send(msg)
 	}
+}
+
+func HandlePhoto(u tbot.Update) {
+
+	photoSlice := u.Message.Photo
+
+	bestPhoto := (*photoSlice)[2]
+
+	user, err := fetchUser(u.Message.Chat.ID)
+	if err != nil {
+
+		if err == redis.Nil {
+			UserNotLoggedIn(u.Message.Chat.ID)
+			return
+		}
+
+		msg := tbot.NewMessage(u.Message.Chat.ID, "Error in fetching user "+err.Error())
+		bot.Send(msg)
+		log.Warn.Println("Error in fetching user", err.Error())
+		return
+	}
+
+	imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
+	if err != nil {
+		msg := tbot.NewMessage(u.Message.Chat.ID, "Error in uploading image, Please retry")
+		bot.Send(msg)
+	}
+
+	resp, err := i.UploadImage(imgUrl, user)
+	if err != nil {
+		ErrorResponse(u.Message.Chat.ID, err)
+		return
+	}
+
+	msgstr := "Image Uploaded\n"
+	msgstr += "URL: " + resp.Data.Link
+
+	msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+	msg.ReplyToMessageID = u.Message.MessageID
+	msg.DisableWebPagePreview = true
+	bot.Send(msg)
 }
 
 func fetchUser(chatid int64) (*common.User, error) {

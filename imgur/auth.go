@@ -4,15 +4,6 @@ import (
 	"net/http"
 )
 
-type authConfig struct {
-	AccessToken     string `json:"access_token"`
-	RefreshToken    string `json:"refresh_token"`
-	ExpiresIn       int    `json:"expires_in"`
-	TokenType       string `json:"token_type"`
-	AccountUsername string `json:"account_username"`
-	State           string `json:"state"`
-}
-
 type imgurError struct {
 	Data struct {
 		Error   string `json:"error"`

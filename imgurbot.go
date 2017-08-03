@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"github.com/ishanjain28/imgur-bot/botutil"
 	"github.com/ishanjain28/imgur-bot/imgur"
-	"fmt"
 	"github.com/go-redis/redis"
 	"strings"
 	"strconv"
@@ -174,7 +173,13 @@ func handleUpdates(bot *tbot.BotAPI, i *imgur.Imgur, u tbot.Update) {
 	}
 
 	if u.Message.Text != "" {
-		fmt.Println(i.AccountBase("ishanjain28", ""))
+		//fmt.Println(i.AccountBase("ishanjain28", ""))
+		return
+	}
+
+	if u.Message.Photo != nil {
+		botutil.HandlePhoto(u)
+		return
 	}
 }
 

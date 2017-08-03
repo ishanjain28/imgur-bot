@@ -7,7 +7,6 @@ import (
 	"strings"
 	"io/ioutil"
 	"github.com/getlantern/errors"
-	"strconv"
 	"encoding/json"
 )
 
@@ -44,7 +43,7 @@ func (i *Imgur) GenerateAccessToken(refreshToken string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Add("Content-Type", "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW")
+	req.Header.Add("Content-Type", " multipart/form-data; boundary=------------------------e83a7963e97655ab")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -84,7 +83,7 @@ func (i *Imgur) AccountBase(username, accountID string) (base *AccountBase, err 
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New("Status code is not 200 (" + strconv.Itoa(resp.StatusCode) + ")")
+		return nil, errors.New("Error in fetching information about user")
 	}
 
 	a := &AccountBase{}
