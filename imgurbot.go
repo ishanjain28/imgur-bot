@@ -104,8 +104,11 @@ func main() {
 	//Initalise botutil package
 	botutil.Init(bot, i, redisClient)
 
+	//Redirect users visting home page to telegram
+	http.HandleFunc("/", redirectToTelegram)
+
 	go func() {
-		err := http.ListenAndServeTLS(":"+PORT, "certificate.crt", "privatekey.key", nil)
+		err := http.ListenAndServe(":"+PORT, nil)
 		if err != nil {
 			log.Error.Fatalln("Error in http server", err.Error())
 		}
@@ -156,10 +159,9 @@ func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
 			log.Error.Fatalln("Error in setting webhook", webhookAddr, err.Error())
 		}
 
-		//updates := bot.ListenForWebhook("/chinguimgurbot/" + bot.Token)
+		updates := bot.ListenForWebhook("/chinguimgurbot/" + bot.Token)
 
-		//	TODO Complete this.
-
+		return updates
 	}
 
 	return nil
@@ -215,4 +217,8 @@ func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
 	if res == "OK" {
 		log.Info.Printf("%s logged in with imgur account %s", tusername, username)
 	}
+}
+
+func redirectToTelegram(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://t.me/chinguimgurbot", http.StatusTemporaryRedirect)
 }
