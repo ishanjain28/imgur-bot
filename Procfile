@@ -1,0 +1,1 @@
+web: imgur-bot
