@@ -19,7 +19,7 @@ var (
 	GO_ENV              = ""
 	PORT                = ""
 	TOKEN               = ""
-	HOST                = "chinguimgurbot.herokuapp.com:80"
+	HOST                = "chinguimgurbot.herokuapp.com"
 	IMGUR_CLIENT_ID     = ""
 	IMGUR_CLIENT_SECRET = ""
 	REDIS_URL           = ""
