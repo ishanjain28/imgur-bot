@@ -1,0 +1,6 @@
+package imgur
+
+
+func FetchEndpoint() {
+
+}
