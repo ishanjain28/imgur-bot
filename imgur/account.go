@@ -6,30 +6,13 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
-	"github.com/getlantern/errors"
 	"encoding/json"
+	"github.com/ishanjain28/imgur-bot/log"
 )
 
-type AccountBase struct {
-	Data struct {
-		ID             int         `json:"id"`
-		URL            string      `json:"url"`
-		Bio            interface{} `json:"bio"`
-		Avatar         interface{} `json:"avatar"`
-		Reputation     int         `json:"reputation"`
-		ReputationName string      `json:"reputation_name"`
-		Created        int         `json:"created"`
-		ProExpiration  bool        `json:"pro_expiration"`
-		UserFollow struct {
-			Status bool `json:"status"`
-		} `json:"user_follow"`
-	} `json:"data"`
-	Success bool `json:"success"`
-	Status  int  `json:"status"`
-}
+func (i *Imgur) GenerateAccessToken(refreshToken string) *imgurError {
 
-func (i *Imgur) GenerateAccessToken(refreshToken string) error {
-	//TOOD:Returns, grant_type invalid error
+	//TODO:Returns, grant_type invalid error, most likely a bug in imgur's API
 	form := url.Values{}
 	form.Add("grant_type", "refresh_token")
 	form.Add("refresh_token", refreshToken)
@@ -38,40 +21,41 @@ func (i *Imgur) GenerateAccessToken(refreshToken string) error {
 
 	client := &http.Client{}
 
-	fmt.Println(form.Encode())
 	req, err := http.NewRequest("POST", hostaddr+"/oauth2/token", strings.NewReader(form.Encode()))
 	if err != nil {
-		return err
+		return createError(0, "POST", err.Error(), "/oauth2/token")
 	}
 	req.Header.Add("Content-Type", " multipart/form-data; boundary=------------------------e83a7963e97655ab")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return createError(resp.StatusCode, "POST", err.Error(), "/oauth2/token")
 	}
 
 	if resp.StatusCode != 200 {
-		return errors.New("Status Code from imgur is", resp.StatusCode)
+		return createError(resp.StatusCode, "POST", "", "/oauth2/token")
 	}
 
 	b, _ := ioutil.ReadAll(resp.Body)
 
+	//TODO:Complete this
 	fmt.Println(string(b))
 
 	return nil
 
 }
 
-func (i *Imgur) AccountBase(username, accountID string) (base *AccountBase, err error) {
+func (i *Imgur) AccountBase(username, accountID string) (base *accountBase, ierr *imgurError) {
 	var req *http.Request
-
-	//Create a new Request
+	var err error
+	//Create ab new Request
 	if username == "" && accountID != "" {
 		req, err = http.NewRequest("GET", hostaddr+"/3/account?account_id="+accountID, nil)
+	} else {
+		req, err = http.NewRequest("GET", hostaddr+"/3/account/"+username, nil)
 	}
-	req, err = http.NewRequest("GET", hostaddr+"/3/account/"+username, nil)
 	if err != nil {
-		return nil, err
+		return nil, createError(0, "GET", err.Error(), "/3/account/{{username}}")
 	}
 
 	//Add Authorization header
@@ -80,18 +64,28 @@ func (i *Imgur) AccountBase(username, accountID string) (base *AccountBase, err 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, createError(resp.StatusCode, "GET", err.Error(), "/3/account/{{username}}")
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New("Error in fetching information about user")
+		return nil, createError(resp.StatusCode, "GET", "", "/3/account/{{username}}")
 	}
 
-	a := &AccountBase{}
+	ab := &accountBase{}
 
-	err = json.NewDecoder(resp.Body).Decode(a)
+	// First try unmarshalling response into accountBase struct, If it fails, then unmarshal it into
+	// imgurError and return because there are only two possible responses from imgur
+	err = json.NewDecoder(resp.Body).Decode(ab)
 	if err != nil {
-		return nil, err
+
+		ierr := &imgurError{}
+		err = json.NewDecoder(resp.Body).Decode(&ierr)
+		if err != nil {
+			//	what is wrong with imgur!!!!?????
+			log.Warn.Println("Error in unmarshalling", err.Error())
+		}
+
+		return nil, ierr
 	}
 
-	return a, nil
+	return ab, nil
 }

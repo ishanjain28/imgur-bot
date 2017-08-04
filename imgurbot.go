@@ -175,7 +175,7 @@ func handleUpdates(bot *tbot.BotAPI, i *imgur.Imgur, u tbot.Update) {
 	}
 
 	if u.Message.Text != "" {
-		//fmt.Println(i.AccountBase("ishanjain28", ""))
+		//fmt.Println(i.accountBase("ishanjain28", ""))
 		return
 	}
 

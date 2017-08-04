@@ -4,16 +4,6 @@ import (
 	"net/http"
 )
 
-type imgurError struct {
-	Data struct {
-		Error   string `json:"error"`
-		Request string `json:"request"`
-		Method  string `json:"method"`
-	} `json:"data"`
-	Success bool `json:"success"`
-	Status  int  `json:"status"`
-}
-
 func (i *Imgur) AccessTokenString(state string) string {
 
 	if state == "" {

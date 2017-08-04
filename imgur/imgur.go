@@ -4,17 +4,6 @@ import "errors"
 
 var hostaddr = "https://api.imgur.com"
 
-type Config struct {
-	ClientID     string
-	ClientSecret string
-	UseFreeAPI   bool
-	XMashapeKey  string
-}
-
-type Imgur struct {
-	Config Config
-}
-
 func Init(c Config) (*Imgur, error) {
 
 	i := &Imgur{}

@@ -14,7 +14,7 @@ func UserNotLoggedIn(cid int64) {
 	bot.Send(msg)
 }
 
-func UserStatsMessage(cid int64, stats *imgur.AccountBase, user *common.User) {
+func UserStatsMessage(cid int64, stats *imgur.accountBase, user *common.User) {
 
 	msgstr := "*Username*: " + user.Username + "\n"
 
