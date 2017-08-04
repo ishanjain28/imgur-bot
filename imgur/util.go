@@ -5,7 +5,6 @@ import (
 	"io"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
-	"fmt"
 )
 
 func createError(statusCode int, method, error, request string) *IError {
@@ -33,12 +32,11 @@ func (i *IError) Error() string {
 		return i.Data.Method + ": " + i.Data.Error
 	}
 
-	return ""
+	return i.Data.Error
 }
 
 func makeAuthorisedRequest(method, url, token, tokenType, data string) (*http.Response, *IError) {
 
-	fmt.Println(method, url, token, data)
 	client := &http.Client{}
 
 	var dataReader io.Reader

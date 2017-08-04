@@ -76,14 +76,12 @@ func HandleCommands(u tbot.Update) {
 
 		cCount, ierr := i.CommentCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			fmt.Println(ierr)
 			ErrorResponse(u.Message.Chat.ID, ierr)
 			return
 		}
 
 		iCount, err := i.ImageCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			fmt.Println(ierr)
 			ErrorResponse(u.Message.Chat.ID, ierr)
 			return
 		}

@@ -12,7 +12,7 @@ type Imgur struct {
 }
 
 type Basic struct {
-	Data    bool `json:"data"`
+	Data    int64 `json:"data"`
 	Status  int  `json:"status"`
 	Success bool `json:"success"`
 }

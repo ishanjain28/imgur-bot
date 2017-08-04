@@ -26,6 +26,14 @@ func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, 
 
 	msgstr += "*Profile Link*: http://imgur.com/user/" + stats.Data.URL + "\n"
 
+	if cCount != nil {
+		msgstr += user.Username + " has made " + strconv.FormatInt(cCount.Data, 10) + " comments"
+	}
+
+	if iCount != nil {
+		msgstr += user.Username + " has posted " + strconv.FormatInt(iCount.Data, 10) + " images"
+	}
+
 	if stats.Data.Avatar != nil {
 		msgstr += "*Avatar*: " + stats.Data.Avatar.(string) + "\n"
 	}
@@ -58,5 +66,5 @@ func ErrorResponse(cid int64, err error) {
 
 	msg := tbot.NewMessage(cid, err.Error())
 	bot.Send(msg)
-	log.Warn.Println("Some error Occurred, Please retry", err.Error())
+	log.Warn.Println("Error Occurred", err.Error())
 }

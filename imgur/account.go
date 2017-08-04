@@ -102,6 +102,7 @@ func (i *Imgur) CommentCount(username, accessToken string) (b *Basic, ierr *IErr
 		ierr := &IError{}
 		err := json.NewDecoder(resp.Body).Decode(&ierr)
 		if err != nil {
+
 			log.Warn.Println("Error in unmarshalling", err.Error())
 		}
 
