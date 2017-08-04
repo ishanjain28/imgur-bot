@@ -7,6 +7,7 @@ import (
 	"github.com/ishanjain28/imgur-bot/log"
 	"strconv"
 	"time"
+	"fmt"
 )
 
 func UserNotLoggedIn(cid int64) {
@@ -14,8 +15,11 @@ func UserNotLoggedIn(cid int64) {
 	bot.Send(msg)
 }
 
-func UserStatsMessage(cid int64, stats *imgur.accountBase, user *common.User) {
+func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, iCount *imgur.Basic, user *common.User) {
 
+	if cCount != nil && iCount != nil {
+		fmt.Println(cCount.Data, iCount.Data)
+	}
 	msgstr := "*Username*: " + user.Username + "\n"
 
 	msgstr += "*Reputation*: " + strconv.Itoa(stats.Data.Reputation) + " (_" + stats.Data.ReputationName + " _)\n"
@@ -46,10 +50,12 @@ func UserStatsMessage(cid int64, stats *imgur.accountBase, user *common.User) {
 
 	msg := tbot.NewMessage(cid, msgstr)
 	msg.ParseMode = "markdown"
+	msg.DisableWebPagePreview = true
 	bot.Send(msg)
 }
 
 func ErrorResponse(cid int64, err error) {
+
 	msg := tbot.NewMessage(cid, err.Error())
 	bot.Send(msg)
 	log.Warn.Println("Some error Occurred, Please retry", err.Error())

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
+	"fmt"
 )
 
 var (
@@ -34,12 +35,12 @@ func HandleCommands(u tbot.Update) {
 
 	case "/login":
 		msg := tbot.NewMessage(u.Message.Chat.ID, i.AccessTokenString(strconv.FormatInt(u.Message.Chat.ID, 10)+"-"+u.Message.Chat.UserName))
+		msg.DisableWebPagePreview = true
 		bot.Send(msg)
 
 	case "/stats":
 
 		//Handle the case when user gives a imgur username after /stats command
-
 		if len(cmdArray) > 1 {
 			stats, err := i.AccountBase(cmdArray[1], "")
 			if err != nil {
@@ -50,13 +51,12 @@ func HandleCommands(u tbot.Update) {
 			//Create a new common.User with just the username
 			user := &common.User{Username: cmdArray[1]}
 
-			UserStatsMessage(u.Message.Chat.ID, stats, user)
+			UserStatsMessage(u.Message.Chat.ID, stats, nil, nil, user)
 			return
 		}
 
 		user, err := fetchUser(u.Message.Chat.ID)
 		if err != nil {
-
 			if err == redis.Nil {
 				UserNotLoggedIn(u.Message.Chat.ID)
 				return
@@ -67,13 +67,28 @@ func HandleCommands(u tbot.Update) {
 			log.Warn.Println("error in fetching user", err.Error())
 			return
 		}
-		stats, err := i.AccountBase(user.Username, "")
-		if err != nil {
-			ErrorResponse(u.Message.Chat.ID, err)
+
+		stats, ierr := i.AccountBase(user.Username, "")
+		if ierr != nil {
+			ErrorResponse(u.Message.Chat.ID, ierr)
 			return
 		}
 
-		UserStatsMessage(u.Message.Chat.ID, stats, user)
+		cCount, ierr := i.CommentCount(user.Username, user.AccessToken)
+		if ierr != nil {
+			fmt.Println(ierr)
+			ErrorResponse(u.Message.Chat.ID, ierr)
+			return
+		}
+
+		iCount, err := i.ImageCount(user.Username, user.AccessToken)
+		if ierr != nil {
+			fmt.Println(ierr)
+			ErrorResponse(u.Message.Chat.ID, ierr)
+			return
+		}
+
+		UserStatsMessage(u.Message.Chat.ID, stats, cCount, iCount, user)
 
 	case "/logout":
 	case "/help":
@@ -91,7 +106,6 @@ func HandlePhoto(u tbot.Update) {
 
 	user, err := fetchUser(u.Message.Chat.ID)
 	if err != nil {
-
 		if err == redis.Nil {
 			UserNotLoggedIn(u.Message.Chat.ID)
 			return
@@ -105,13 +119,14 @@ func HandlePhoto(u tbot.Update) {
 
 	imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
 	if err != nil {
+		fmt.Println(err)
 		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
 		bot.Send(msg)
 	}
 
-	resp, err := i.UploadImage(imgUrl, user)
-	if err != nil {
-		ErrorResponse(u.Message.Chat.ID, err)
+	resp, ierr := i.UploadImage(imgUrl, user.AccessToken)
+	if ierr != nil {
+		ErrorResponse(u.Message.Chat.ID, ierr)
 		return
 	}
 

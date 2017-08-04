@@ -11,13 +11,13 @@ type Imgur struct {
 	Config Config
 }
 
-type basic struct {
+type Basic struct {
 	Data    bool `json:"data"`
 	Status  int  `json:"status"`
 	Success bool `json:"success"`
 }
 
-type iError struct {
+type IError struct {
 	Data struct {
 		Error   string `json:"error"`
 		Request string `json:"request"`
@@ -27,7 +27,7 @@ type iError struct {
 	Status  int  `json:"status"`
 }
 
-type accountBase struct {
+type AccountBase struct {
 	Data struct {
 		ID             int         `json:"id"`
 		URL            string      `json:"url"`

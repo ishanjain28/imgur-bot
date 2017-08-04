@@ -123,7 +123,25 @@ func main() {
 			continue
 		}
 
-		handleUpdates(bot, i, update)
+		handleUpdates(update)
+	}
+}
+
+func handleUpdates(u tbot.Update) {
+
+	if u.Message.IsCommand() {
+		botutil.HandleCommands(u)
+		return
+	}
+
+	if u.Message.Text != "" {
+		//fmt.Println(i.accountBase("ishanjain28", ""))
+		return
+	}
+
+	if u.Message.Photo != nil {
+		botutil.HandlePhoto(u)
+		return
 	}
 }
 
@@ -165,24 +183,6 @@ func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
 	}
 
 	return nil
-}
-
-func handleUpdates(bot *tbot.BotAPI, i *imgur.Imgur, u tbot.Update) {
-
-	if u.Message.IsCommand() {
-		botutil.HandleCommands(u)
-		return
-	}
-
-	if u.Message.Text != "" {
-		//fmt.Println(i.accountBase("ishanjain28", ""))
-		return
-	}
-
-	if u.Message.Photo != nil {
-		botutil.HandlePhoto(u)
-		return
-	}
 }
 
 func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
