@@ -70,12 +70,12 @@ func main() {
 	//Parse connection string and connect to Database
 	redisOpt, err := redis.ParseURL(REDIS_URL)
 	if err != nil {
-		log.Error.Fatalln("Error in parsing $REDISTOGO_URL")
+		log.Error.Fatalln("error in parsing $REDISTOGO_URL")
 	}
 	redisClient = redis.NewClient(redisOpt)
 	err = redisClient.Ping().Err()
 	if err != nil {
-		log.Error.Fatalln("Error in connecting to DB", err.Error())
+		log.Error.Fatalln("error in connecting to DB", err.Error())
 	}
 
 	//Initialise imgur
@@ -85,7 +85,7 @@ func main() {
 		ClientSecret: IMGUR_CLIENT_SECRET},
 	)
 	if err != nil {
-		log.Error.Fatalln("Error in initialising imgur", err.Error())
+		log.Error.Fatalln("error in initialising imgur", err.Error())
 	}
 
 	//Set OAuth Endpoint
@@ -93,7 +93,7 @@ func main() {
 
 	bot, err := tbot.NewBotAPI(TOKEN)
 	if err != nil {
-		log.Error.Fatalln("Error in starting bot", err.Error())
+		log.Error.Fatalln("error in starting bot", err.Error())
 	}
 
 	if GO_ENV == "development" {
@@ -110,7 +110,7 @@ func main() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)
 		if err != nil {
-			log.Error.Fatalln("Error in http server", err.Error())
+			log.Error.Fatalln("error in http server", err.Error())
 		}
 	}()
 
@@ -142,7 +142,7 @@ func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
 
 		updates, err := bot.GetUpdatesChan(u)
 		if err != nil {
-			log.Error.Println("Error in fetching updates", err.Error())
+			log.Error.Println("error in fetching updates", err.Error())
 		}
 
 		return updates
@@ -156,7 +156,7 @@ func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
 		_, err := bot.SetWebhook(tbot.NewWebhook(webhookAddr))
 
 		if err != nil {
-			log.Error.Fatalln("Error in setting webhook", webhookAddr, err.Error())
+			log.Error.Fatalln("error in setting webhook", webhookAddr, err.Error())
 		}
 
 		updates := bot.ListenForWebhook("/chinguimgurbot/" + bot.Token)
@@ -212,7 +212,7 @@ func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
 
 	res, err := redisClient.Set(tchatid, serialized, time.Duration(expiresinInt)*time.Second).Result()
 	if err != nil {
-		log.Warn.Println("Error in storing login information", err.Error())
+		log.Warn.Println("error in storing login information", err.Error())
 	}
 	if res == "OK" {
 		log.Info.Printf("%s logged in with imgur account %s", tusername, username)

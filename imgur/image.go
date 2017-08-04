@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 )
 
-func (i *Imgur) UploadImage(imgLink string, user *common.User) (image *uploadImage, ierr *imgurError) {
+func (i *Imgur) UploadImage(imgLink string, user *common.User) (image *uploadImage, ierr *iError) {
 
 	client := &http.Client{}
 
@@ -19,9 +19,9 @@ func (i *Imgur) UploadImage(imgLink string, user *common.User) (image *uploadIma
 
 	req, err := http.NewRequest("POST", hostaddr+"/3/image", strings.NewReader(form.Encode()))
 	if err != nil {
-		log.Warn.Println("Error in creating upload image req", err.Error())
+		log.Warn.Println("error in creating upload image req", err.Error())
 
-		return nil, createError(0, "POST", "Error in creating request", "/3/image")
+		return nil, createError(0, "POST", "error in creating request", "/3/image")
 	}
 
 	//Add Authorization header
@@ -41,15 +41,15 @@ func (i *Imgur) UploadImage(imgLink string, user *common.User) (image *uploadIma
 	a := &uploadImage{}
 
 	// First try unmarshalling response into uploadImage struct, If it fails, then unmarshal it into
-	// imgurError and return because there are only two possible responses from imgur
+	// error and return because there are only two possible responses from imgur
 	err = json.NewDecoder(resp.Body).Decode(a)
 	if err != nil {
 
-		ierr := &imgurError{}
+		ierr := &error{}
 		err = json.NewDecoder(resp.Body).Decode(&ierr)
 		if err != nil {
 			//	what is wrong with imgur!!!!?????
-			log.Warn.Println("Error in unmarshalling", err.Error())
+			log.Warn.Println("error in unmarshalling", err.Error())
 		}
 
 		return nil, ierr

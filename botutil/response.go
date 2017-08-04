@@ -52,5 +52,5 @@ func UserStatsMessage(cid int64, stats *imgur.accountBase, user *common.User) {
 func ErrorResponse(cid int64, err error) {
 	msg := tbot.NewMessage(cid, err.Error())
 	bot.Send(msg)
-	log.Warn.Println("Some Error Occurred, Please retry", err.Error())
+	log.Warn.Println("Some error Occurred, Please retry", err.Error())
 }

@@ -62,9 +62,9 @@ func HandleCommands(u tbot.Update) {
 				return
 			}
 
-			msg := tbot.NewMessage(u.Message.Chat.ID, "Error in fetching user "+err.Error())
+			msg := tbot.NewMessage(u.Message.Chat.ID, "error in fetching user "+err.Error())
 			bot.Send(msg)
-			log.Warn.Println("Error in fetching user", err.Error())
+			log.Warn.Println("error in fetching user", err.Error())
 			return
 		}
 		stats, err := i.AccountBase(user.Username, "")
@@ -97,15 +97,15 @@ func HandlePhoto(u tbot.Update) {
 			return
 		}
 
-		msg := tbot.NewMessage(u.Message.Chat.ID, "Error in fetching user "+err.Error())
+		msg := tbot.NewMessage(u.Message.Chat.ID, "error in fetching user "+err.Error())
 		bot.Send(msg)
-		log.Warn.Println("Error in fetching user", err.Error())
+		log.Warn.Println("error in fetching user", err.Error())
 		return
 	}
 
 	imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
 	if err != nil {
-		msg := tbot.NewMessage(u.Message.Chat.ID, "Error in uploading image, Please retry")
+		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
 		bot.Send(msg)
 	}
 

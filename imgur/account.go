@@ -10,7 +10,7 @@ import (
 	"github.com/ishanjain28/imgur-bot/log"
 )
 
-func (i *Imgur) GenerateAccessToken(refreshToken string) *imgurError {
+func (i *Imgur) GenerateAccessToken(refreshToken string) *error {
 
 	//TODO:Returns, grant_type invalid error, most likely a bug in imgur's API
 	form := url.Values{}
@@ -45,7 +45,7 @@ func (i *Imgur) GenerateAccessToken(refreshToken string) *imgurError {
 
 }
 
-func (i *Imgur) AccountBase(username, accountID string) (base *accountBase, ierr *imgurError) {
+func (i *Imgur) AccountBase(username, accountID string) (base *accountBase, ierr *iError) {
 	var req *http.Request
 	var err error
 	//Create ab new Request
@@ -73,19 +73,33 @@ func (i *Imgur) AccountBase(username, accountID string) (base *accountBase, ierr
 	ab := &accountBase{}
 
 	// First try unmarshalling response into accountBase struct, If it fails, then unmarshal it into
-	// imgurError and return because there are only two possible responses from imgur
+	// error and return because there are only two possible responses from imgur
 	err = json.NewDecoder(resp.Body).Decode(ab)
 	if err != nil {
 
-		ierr := &imgurError{}
+		ierr := &iError{}
 		err = json.NewDecoder(resp.Body).Decode(&ierr)
 		if err != nil {
 			//	what is wrong with imgur!!!!?????
-			log.Warn.Println("Error in unmarshalling", err.Error())
+			log.Warn.Println("error in unmarshalling", err.Error())
 		}
 
 		return nil, ierr
 	}
 
 	return ab, nil
+}
+
+func ImageCount(username string) (ierr *error) {
+
+	req, err := http.NewRequest("GET", hostaddr+"/3/account/"+username+"/images/count", nil)
+
+}
+
+func CommentCount(username string) {
+	req, err := http.NewRequest("GET", hostaddr+"/3/account/"+username+"/comments/count", nil)
+	if err != nil {
+
+	}
+
 }
