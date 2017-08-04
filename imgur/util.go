@@ -15,7 +15,7 @@ func createError(statusCode int, method, error, request string) *IError {
 	}
 
 	if statusCode != 200 && statusCode != 0 && error == "" {
-		ierr.Data.Error = "Status code is not 200"
+		ierr.Data.Error = http.StatusText(statusCode)
 	} else {
 		ierr.Data.Error = error
 	}

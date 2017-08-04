@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
+	"time"
+	"fmt"
 )
 
 var (
@@ -17,12 +19,14 @@ var (
 	redisClient *redis.Client
 )
 
+// Initialise global variables in this package
 func Init(b *tbot.BotAPI, Imgur *imgur.Imgur, rClient *redis.Client) {
 	bot = b
 	i = Imgur
 	redisClient = rClient
 }
 
+// Handle Commands
 func HandleCommands(u tbot.Update) {
 	cmdArray := strings.Split(u.Message.Text, " ")
 
@@ -46,7 +50,7 @@ func HandleCommands(u tbot.Update) {
 		if len(cmdArray) > 1 {
 			stats, err := i.AccountBase(cmdArray[1], "")
 			if err != nil {
-				ErrorResponse(u.Message.Chat.ID, err)
+				ErrorMessage(u.Message.Chat.ID, err)
 				return
 			}
 
@@ -57,6 +61,7 @@ func HandleCommands(u tbot.Update) {
 			return
 		}
 
+		// Fetch user from database
 		user, err := fetchUser(u.Message.Chat.ID)
 		if err != nil {
 			if err == redis.Nil {
@@ -72,19 +77,19 @@ func HandleCommands(u tbot.Update) {
 
 		stats, ierr := i.AccountBase(user.Username, "")
 		if ierr != nil {
-			ErrorResponse(u.Message.Chat.ID, ierr)
+			ErrorMessage(u.Message.Chat.ID, ierr)
 			return
 		}
 
 		cCount, ierr := i.CommentCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			ErrorResponse(u.Message.Chat.ID, ierr)
+			ErrorMessage(u.Message.Chat.ID, ierr)
 			return
 		}
 
 		iCount, ierr := i.ImageCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			ErrorResponse(u.Message.Chat.ID, ierr)
+			ErrorMessage(u.Message.Chat.ID, ierr)
 			return
 		}
 
@@ -98,6 +103,12 @@ func HandleCommands(u tbot.Update) {
 	}
 }
 
+// Handle Photo uploads
+// Fetch User from Database
+// Fetch the Albums in that user's Imgur account
+// Show a keyboard to user so he/she can select a album or select none at all
+// Fetch URL of file
+// Upload Image
 func HandlePhoto(u tbot.Update) {
 
 	photoSlice := u.Message.Photo
@@ -117,26 +128,112 @@ func HandlePhoto(u tbot.Update) {
 		return
 	}
 
-	imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
-	if err != nil {
-		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
-		bot.Send(msg)
-		log.Warn.Println("Error in getting file url", err.Error())
-	}
-
-	resp, ierr := i.UploadImage(imgUrl, user.AccessToken)
+	albums, ierr := i.Albums(user.Username, user.AccessToken)
 	if ierr != nil {
-		ErrorResponse(u.Message.Chat.ID, ierr)
+		ErrorMessage(u.Message.Chat.ID, ierr)
 		return
 	}
 
-	msgstr := "Image Uploaded\n"
-	msgstr += "URL: " + resp.Data.Link
+	if len(albums.Data) > 0 {
+		msg := tbot.NewMessage(u.Message.Chat.ID, "Select an Album")
 
-	msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
-	msg.ReplyToMessageID = u.Message.MessageID
-	msg.DisableWebPagePreview = true
-	bot.Send(msg)
+		var rows [][]tbot.KeyboardButton
+
+		button := tbot.NewKeyboardButton("<No Album>")
+		row := [][]tbot.KeyboardButton{{button}}
+
+		rows = append(rows, row...)
+
+		for i := 0; i < len(albums.Data); i++ {
+
+			button := tbot.NewKeyboardButton(albums.Data[i].Title)
+
+			row := [][]tbot.KeyboardButton{{button}}
+
+			rows = append(rows, row...)
+		}
+
+		msg.ReplyMarkup = tbot.ReplyKeyboardMarkup{Keyboard: rows, OneTimeKeyboard: true}
+
+		fmt.Println(u.Message.MessageID)
+		_, err := redisClient.Set("photo_upload-"+strconv.FormatInt(u.Message.Chat.ID, 10), bestPhoto.FileID+"---"+strconv.Itoa(u.Message.MessageID)+"---"+user.AccessToken, time.Duration(100000)*time.Second).Result()
+		if err != nil {
+			msg := tbot.NewMessage(u.Message.Chat.ID, "Error occurred in processing your request, Please retry")
+			bot.Send(msg)
+
+			log.Warn.Println("Error occurred in storing photo_upload_key", err.Error())
+			return
+		}
+
+		bot.Send(msg)
+	} else {
+		// User has no albums, Just upload the image,
+		imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
+		if err != nil {
+			msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
+			bot.Send(msg)
+			log.Warn.Println("Error in getting file url", err.Error())
+		}
+
+		resp, ierr := i.UploadImage(imgUrl, user.AccessToken)
+		if ierr != nil {
+			ErrorMessage(u.Message.Chat.ID, ierr)
+			return
+		}
+
+		msgstr := "Image Uploaded\n"
+		msgstr += "URL: " + resp.Data.Link
+
+		msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+		msg.ReplyToMessageID = u.Message.MessageID
+		msg.DisableWebPagePreview = true
+		bot.Send(msg)
+	}
+}
+
+func HandleText(u tbot.Update) {
+
+	res, err := redisClient.Get("photo_upload-" + strconv.FormatInt(u.Message.Chat.ID, 10)).Result()
+
+	if err != nil {
+		if err == redis.Nil {
+			msg := tbot.NewMessage(u.Message.Chat.ID, "Request Expired, Please retry")
+			bot.Send(msg)
+		}
+		log.Warn.Println("Error in fetching photo_upload key from redis", err.Error())
+		return
+	}
+
+	resSplitted := strings.Split(res, "---")[1]
+	messageID := string(resSplitted[1])
+	fileID := string(resSplitted[0])
+	accessToken := string(resSplitted[2])
+
+	fmt.Println(u.Message.MessageID, messageID)
+	if strconv.Itoa(u.Message.MessageID+2) == messageID {
+		imgUrl, err := bot.GetFileDirectURL(fileID)
+		if err != nil {
+			msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
+			bot.Send(msg)
+			log.Warn.Println("Error in getting file url", err.Error())
+		}
+
+		resp, ierr := i.UploadImage(imgUrl, accessToken)
+		if ierr != nil {
+			ErrorMessage(u.Message.Chat.ID, ierr)
+			return
+		}
+
+		msgstr := "Image Uploaded\n"
+		msgstr += "URL: " + resp.Data.Link
+
+		msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+		msg.ReplyToMessageID = u.Message.MessageID
+		msg.DisableWebPagePreview = true
+		bot.Send(msg)
+	}
+
+	redisClient.Del("photo_upload-" + strconv.FormatInt(u.Message.Chat.ID, 10))
 }
 
 func fetchUser(chatid int64) (*common.User, error) {

@@ -135,7 +135,7 @@ func handleUpdates(u tbot.Update) {
 	}
 
 	if u.Message.Text != "" {
-		//fmt.Println(i.accountBase("ishanjain28", ""))
+		botutil.HandleText(u)
 		return
 	}
 

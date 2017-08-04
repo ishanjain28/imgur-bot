@@ -54,8 +54,9 @@ func (i *Imgur) AccountBase(username, accountID string) (base *AccountBase, ierr
 		err = json.NewDecoder(resp.Body).Decode(&ierr)
 
 		if err != nil {
-			//	what is wrong with imgur!!!!?????
 			log.Warn.Println("error in unmarshalling", err.Error())
+
+			return nil, createError(resp.StatusCode, "GET", err.Error(), "/3/account")
 		}
 
 		return nil, ierr
@@ -91,7 +92,6 @@ func (i *Imgur) CommentCount(username, accessToken string) (b *Basic, ierr *IErr
 
 	resp, ierr := makeAuthorisedRequest("GET", "/3/account/"+username+"/comments/count", accessToken, "access_token", "")
 	if ierr != nil {
-		fmt.Println(ierr)
 		return nil, ierr
 	}
 

@@ -12,7 +12,7 @@ type Imgur struct {
 }
 
 type Basic struct {
-	Data    int64 `json:"data"`
+	Data    interface{} `json:"data"`
 	Status  int  `json:"status"`
 	Success bool `json:"success"`
 }
@@ -45,7 +45,7 @@ type AccountBase struct {
 	Status  int  `json:"status"`
 }
 
-type uploadImage struct {
+type Image struct {
 	Data struct {
 		ID          string `json:"id"`
 		Title       interface{} `json:"title"`
@@ -76,4 +76,32 @@ type uploadImage struct {
 	} `json:"data"`
 	Success bool `json:"success"`
 	Status  int `json:"status"`
+}
+
+type Album struct {
+	Data []struct {
+		ID          string      `json:"id"`
+		Title       string      `json:"title"`
+		Description interface{} `json:"description"`
+		Datetime    int         `json:"datetime"`
+		Cover       interface{} `json:"cover"`
+		CoverWidth  interface{} `json:"cover_width"`
+		CoverHeight interface{} `json:"cover_height"`
+		AccountURL  string      `json:"account_url"`
+		AccountID   int         `json:"account_id"`
+		Privacy     string      `json:"privacy"`
+		Layout      string      `json:"layout"`
+		Views       int         `json:"views"`
+		Link        string      `json:"link"`
+		Favorite    bool        `json:"favorite"`
+		Nsfw        interface{} `json:"nsfw"`
+		Section     interface{} `json:"section"`
+		ImagesCount int         `json:"images_count"`
+		InGallery   bool        `json:"in_gallery"`
+		IsAd        bool        `json:"is_ad"`
+		Deletehash  string      `json:"deletehash"`
+		Order       int         `json:"order"`
+	} `json:"data"`
+	Success bool `json:"success"`
+	Status  int  `json:"status"`
 }

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func (i *Imgur) UploadImage(imgLink, accessToken string) (image *uploadImage, ierr *IError) {
+func (i *Imgur) UploadImage(imgLink, accessToken string) (image *Image, ierr *IError) {
 
 	form := url.Values{}
 	form.Add("image", imgLink)
@@ -17,9 +17,9 @@ func (i *Imgur) UploadImage(imgLink, accessToken string) (image *uploadImage, ie
 		return nil, ierr
 	}
 
-	a := &uploadImage{}
+	a := &Image{}
 
-	// First try unmarshalling response into uploadImage struct, If it fails, then unmarshal it into
+	// First try unmarshalling response into Image struct, If it fails, then unmarshal it into
 	// error and return because there are only two possible responses from imgur
 	err := json.NewDecoder(resp.Body).Decode(a)
 	if err != nil {
@@ -29,6 +29,7 @@ func (i *Imgur) UploadImage(imgLink, accessToken string) (image *uploadImage, ie
 		if err != nil {
 			//	what is wrong with imgur!!!!?????
 			log.Warn.Println("error in unmarshalling", err.Error())
+			return nil, createError(resp.StatusCode, "POST", err.Error(), "/3/image")
 		}
 
 		return nil, ierr
