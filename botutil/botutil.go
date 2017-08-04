@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
-	"fmt"
 )
 
 var (
@@ -34,7 +33,10 @@ func HandleCommands(u tbot.Update) {
 		bot.Send(msg)
 
 	case "/login":
-		msg := tbot.NewMessage(u.Message.Chat.ID, i.AccessTokenString(strconv.FormatInt(u.Message.Chat.ID, 10)+"-"+u.Message.Chat.UserName))
+		msgstr := "Open this link in a browser to login:\n"
+
+		msgstr += i.AccessTokenString(strconv.FormatInt(u.Message.Chat.ID, 10) + "-" + u.Message.Chat.UserName)
+		msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
 		msg.DisableWebPagePreview = true
 		bot.Send(msg)
 
@@ -80,7 +82,7 @@ func HandleCommands(u tbot.Update) {
 			return
 		}
 
-		iCount, err := i.ImageCount(user.Username, user.AccessToken)
+		iCount, ierr := i.ImageCount(user.Username, user.AccessToken)
 		if ierr != nil {
 			ErrorResponse(u.Message.Chat.ID, ierr)
 			return
@@ -109,7 +111,7 @@ func HandlePhoto(u tbot.Update) {
 			return
 		}
 
-		msg := tbot.NewMessage(u.Message.Chat.ID, "error in fetching user "+err.Error())
+		msg := tbot.NewMessage(u.Message.Chat.ID, "Error Occurred, Please retry")
 		bot.Send(msg)
 		log.Warn.Println("error in fetching user", err.Error())
 		return
@@ -117,9 +119,9 @@ func HandlePhoto(u tbot.Update) {
 
 	imgUrl, err := bot.GetFileDirectURL(bestPhoto.FileID)
 	if err != nil {
-		fmt.Println(err)
 		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
 		bot.Send(msg)
+		log.Warn.Println("Error in getting file url", err.Error())
 	}
 
 	resp, ierr := i.UploadImage(imgUrl, user.AccessToken)

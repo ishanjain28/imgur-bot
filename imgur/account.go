@@ -21,7 +21,7 @@ func (i *Imgur) GenerateAccessToken(refreshToken string) *IError {
 	body, err := makeUnauthorisedRequest("POST", "/oauth2/token", form.Encode())
 
 	if err != nil {
-		log.Warn.Println("Error in generating token", err.Error())
+		log.Warn.Println("Error in generating token", err.String())
 	}
 	//req.Header.Add("Content-Type", " multipart/form-data; boundary=------------------------e83a7963e97655ab")
 

@@ -7,7 +7,6 @@ import (
 	"github.com/ishanjain28/imgur-bot/log"
 	"strconv"
 	"time"
-	"fmt"
 )
 
 func UserNotLoggedIn(cid int64) {
@@ -17,9 +16,6 @@ func UserNotLoggedIn(cid int64) {
 
 func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, iCount *imgur.Basic, user *common.User) {
 
-	if cCount != nil && iCount != nil {
-		fmt.Println(cCount.Data, iCount.Data)
-	}
 	msgstr := "*Username*: " + user.Username + "\n"
 
 	msgstr += "*Reputation*: " + strconv.Itoa(stats.Data.Reputation) + " (_" + stats.Data.ReputationName + " _)\n"
@@ -27,11 +23,11 @@ func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, 
 	msgstr += "*Profile Link*: http://imgur.com/user/" + stats.Data.URL + "\n"
 
 	if cCount != nil {
-		msgstr += user.Username + " has made " + strconv.FormatInt(cCount.Data, 10) + " comments"
+		msgstr += user.Username + " has made " + strconv.FormatInt(cCount.Data, 10) + " comments\n"
 	}
 
 	if iCount != nil {
-		msgstr += user.Username + " has posted " + strconv.FormatInt(iCount.Data, 10) + " images"
+		msgstr += user.Username + " has posted " + strconv.FormatInt(iCount.Data, 10) + " images\n"
 	}
 
 	if stats.Data.Avatar != nil {
@@ -62,9 +58,9 @@ func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, 
 	bot.Send(msg)
 }
 
-func ErrorResponse(cid int64, err error) {
+func ErrorResponse(cid int64, err *imgur.IError) {
 
-	msg := tbot.NewMessage(cid, err.Error())
+	msg := tbot.NewMessage(cid, err.String())
 	bot.Send(msg)
-	log.Warn.Println("Error Occurred", err.Error())
+	log.Warn.Println("Error Occurred", err.String())
 }

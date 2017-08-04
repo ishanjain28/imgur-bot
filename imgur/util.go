@@ -26,7 +26,7 @@ func createError(statusCode int, method, error, request string) *IError {
 	return ierr
 }
 
-func (i *IError) Error() string {
+func (i *IError) String() string {
 
 	if i != nil {
 		return i.Data.Method + ": " + i.Data.Error
