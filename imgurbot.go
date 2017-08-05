@@ -13,7 +13,6 @@ import (
 	"time"
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/common"
-	"fmt"
 )
 
 var (
@@ -130,6 +129,10 @@ func main() {
 
 func handleUpdates(u tbot.Update) {
 
+	if u.CallbackQuery != nil {
+		botutil.HandleCallbackQuery(u)
+	}
+
 	if u.Message != nil && u.Message.IsCommand() {
 		botutil.HandleCommands(u)
 		return
@@ -138,11 +141,6 @@ func handleUpdates(u tbot.Update) {
 	if u.Message != nil && u.Message.Photo != nil {
 		botutil.HandlePhoto(u)
 		return
-	}
-
-	if u.CallbackQuery != nil {
-		botutil.HandleCallbackQuery(u)
-		fmt.Println(u.CallbackQuery.Data, u.CallbackQuery.Message.Text)
 	}
 
 }

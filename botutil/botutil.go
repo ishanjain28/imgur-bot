@@ -140,8 +140,8 @@ func HandlePhoto(u tbot.Update) {
 
 		var rows [][]tbot.InlineKeyboardButton
 
-		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "<No Album>--"+bestPhoto.FileID)
-		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "<Create Album>--"+bestPhoto.FileID)
+		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "-1\\"+bestPhoto.FileID)
+		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "-2\\"+bestPhoto.FileID)
 
 		row := [][]tbot.InlineKeyboardButton{{noalbumbtn, createbtn}}
 
@@ -149,7 +149,12 @@ func HandlePhoto(u tbot.Update) {
 
 		for i := 0; i < len(albums.Data); i++ {
 
-			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, albums.Data[i].Title+"--"+bestPhoto.FileID)
+			// skip albums with length > 64
+			if len(albums.Data[i].Title) > 64 {
+				continue
+			}
+
+			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, strconv.Itoa(i)+"\\"+bestPhoto.FileID)
 
 			row := [][]tbot.InlineKeyboardButton{{button}}
 
@@ -189,9 +194,16 @@ func HandleCallbackQuery(u tbot.Update) {
 
 	chatID := u.CallbackQuery.Message.Chat.ID
 	messageID := u.CallbackQuery.Message.MessageID
-	datas := strings.Split(u.CallbackQuery.Data, "--")
+	datas := strings.Split(u.CallbackQuery.Data, "\\")
 	fileID := datas[1]
-	albumName := datas[0]
+	albumIndex, err := strconv.Atoi(datas[0])
+	if err != nil {
+		msg := tbot.NewMessage(chatID, "Error in parsing album index")
+		bot.Send(msg)
+		log.Warn.Println("Error in fetching album index", err.Error())
+		return
+
+	}
 
 	user, err := fetchUser(chatID)
 	if err != nil {
@@ -205,6 +217,15 @@ func HandleCallbackQuery(u tbot.Update) {
 		log.Warn.Println("error in fetching user", err.Error())
 		return
 	}
+
+	albums, ierr := i.Albums(user.Username, user.AccessToken)
+	if err != nil {
+		msg := tbot.NewMessage(chatID, "Error: "+ierr.String())
+		bot.Send(msg)
+		log.Warn.Println("Error in getting file url", err.Error())
+	}
+
+	albumName := albums.Data[albumIndex].Title
 
 	imgUrl, err := bot.GetFileDirectURL(fileID)
 	if err != nil {

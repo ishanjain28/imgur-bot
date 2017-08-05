@@ -60,7 +60,7 @@ func UserStatsMessage(cid int64, stats *imgur.AccountBase, cCount *imgur.Basic, 
 
 func ErrorMessage(cid int64, err *imgur.IError) {
 
-	msg := tbot.NewMessage(cid, err.String())
+	msg := tbot.NewMessage(cid, "Error: "+err.String())
 	bot.Send(msg)
 	log.Warn.Println("Error Occurred", err.String())
 }
