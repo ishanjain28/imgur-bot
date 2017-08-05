@@ -138,8 +138,8 @@ func HandlePhoto(u tbot.Update) {
 
 		var rows [][]tbot.InlineKeyboardButton
 
-		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", bestPhoto.FileID)
-		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", bestPhoto.FileID)
+		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "<No Album>-------------------"+bestPhoto.FileID)
+		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "<Create Album>-------------------"+bestPhoto.FileID)
 
 		row := [][]tbot.InlineKeyboardButton{{noalbumbtn, createbtn}}
 
@@ -147,7 +147,7 @@ func HandlePhoto(u tbot.Update) {
 
 		for i := 0; i < len(albums.Data); i++ {
 
-			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, bestPhoto.FileID)
+			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, albums.Data[i].Title+"-------------------"+bestPhoto.FileID)
 
 			row := [][]tbot.InlineKeyboardButton{{button}}
 
@@ -184,49 +184,49 @@ func HandlePhoto(u tbot.Update) {
 }
 
 func HandleCallbackQuery(u tbot.Update) {
-	user, err := fetchUser(u.CallbackQuery.Message.Chat.ID)
+
+	chatID := u.CallbackQuery.Message.Chat.ID
+	messageID := u.CallbackQuery.Message.MessageID
+	datas := strings.Split(u.CallbackQuery.Data, "-------------------")
+	fileID := datas[1]
+	albumName := datas[0]
+
+	user, err := fetchUser(chatID)
 	if err != nil {
 		if err == redis.Nil {
-			UserNotLoggedIn(u.CallbackQuery.Message.Chat.ID)
+			UserNotLoggedIn(chatID)
 			return
 		}
 
-		msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, "Error Occurred, Please retry")
+		msg := tbot.NewMessage(chatID, "Error Occurred, Please retry")
 		bot.Send(msg)
 		log.Warn.Println("error in fetching user", err.Error())
 		return
 	}
 
-	fileID := u.CallbackQuery.Data
-
 	imgUrl, err := bot.GetFileDirectURL(fileID)
 	if err != nil {
-		msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, "error in uploading image, Please retry")
+		msg := tbot.NewMessage(chatID, "error in uploading image, Please retry")
 		bot.Send(msg)
 		log.Warn.Println("Error in getting file url", err.Error())
 	}
 
-	resp, ierr := i.UploadImage(imgUrl, u.CallbackQuery.Message.Text, user.AccessToken)
+	resp, ierr := i.UploadImage(imgUrl, albumName, user.AccessToken)
 	if ierr != nil {
-		ErrorMessage(u.CallbackQuery.Message.Chat.ID, ierr)
+		ErrorMessage(chatID, ierr)
 		return
 	}
 
 	msgstr := "Image Uploaded\n"
+	msgstr += "Album: " + albumName + "\n"
 	msgstr += "URL: " + resp.Data.Link
 
-	msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, msgstr)
-	msg.ReplyToMessageID = u.Message.MessageID
-	msg.DisableWebPagePreview = true
+	msg, err := bot.AnswerCallbackQuery(tbot.CallbackConfig{CallbackQueryID: u.CallbackQuery.ID, Text: msgstr})
 
-	var emptyKeyboardRows [][]tbot.InlineKeyboardButton
+	editmsg := tbot.NewEditMessageReplyMarkup(chatID, messageID, tbot.InlineKeyboardMarkup{})
+	bot.Send(editmsg)
 
-	msg.ReplyMarkup = tbot.InlineKeyboardMarkup{InlineKeyboard: emptyKeyboardRows}
-
-	bot.Send(msg)
-
-	fmt.Println(u.CallbackQuery.Message.Text)
-
+	fmt.Println(msg, err)
 }
 
 func fetchUser(chatid int64) (*common.User, error) {
