@@ -140,7 +140,7 @@ func handleUpdates(u tbot.Update) {
 	}
 
 	if u.CallbackQuery != nil {
-
+		botutil.HandleCallbackQuery(u)
 		fmt.Println(u.CallbackQuery.Data, u.CallbackQuery.Message.Text)
 	}
 

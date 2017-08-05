@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 )
 
-func (i *Imgur) UploadImage(imgLink, accessToken string) (image *Image, ierr *IError) {
+func (i *Imgur) UploadImage(imgLink, albumName, accessToken string) (image *Image, ierr *IError) {
 
 	form := url.Values{}
 	form.Add("image", imgLink)
 	form.Add("type", "URL")
 
+	if albumName != "" {
+		form.Add("album", albumName)
+	}
 	resp, ierr := makeAuthorisedRequest("POST", "/3/image", accessToken, "access_token", form.Encode())
 	if ierr != nil {
 		return nil, ierr

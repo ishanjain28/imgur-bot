@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
+	"fmt"
 )
 
 var (
@@ -137,8 +138,8 @@ func HandlePhoto(u tbot.Update) {
 
 		var rows [][]tbot.InlineKeyboardButton
 
-		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "<no-album-upload-in-gallery>")
-		createbtn := tbot.NewInlineKeyboardButtonData("Create Album", "create-album")
+		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", bestPhoto.FileID)
+		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", bestPhoto.FileID)
 
 		row := [][]tbot.InlineKeyboardButton{{noalbumbtn, createbtn}}
 
@@ -146,7 +147,7 @@ func HandlePhoto(u tbot.Update) {
 
 		for i := 0; i < len(albums.Data); i++ {
 
-			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, albums.Data[i].Title+"extra-data")
+			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, bestPhoto.FileID)
 
 			row := [][]tbot.InlineKeyboardButton{{button}}
 
@@ -165,7 +166,8 @@ func HandlePhoto(u tbot.Update) {
 			log.Warn.Println("Error in getting file url", err.Error())
 		}
 
-		resp, ierr := i.UploadImage(imgUrl, user.AccessToken)
+		resp, ierr := i.UploadImage(imgUrl, "",
+			user.AccessToken)
 		if ierr != nil {
 			ErrorMessage(u.Message.Chat.ID, ierr)
 			return
@@ -179,6 +181,52 @@ func HandlePhoto(u tbot.Update) {
 		msg.DisableWebPagePreview = true
 		bot.Send(msg)
 	}
+}
+
+func HandleCallbackQuery(u tbot.Update) {
+	user, err := fetchUser(u.Message.Chat.ID)
+	if err != nil {
+		if err == redis.Nil {
+			UserNotLoggedIn(u.Message.Chat.ID)
+			return
+		}
+
+		msg := tbot.NewMessage(u.Message.Chat.ID, "Error Occurred, Please retry")
+		bot.Send(msg)
+		log.Warn.Println("error in fetching user", err.Error())
+		return
+	}
+
+	fileID := u.CallbackQuery.Data
+
+	imgUrl, err := bot.GetFileDirectURL(fileID)
+	if err != nil {
+		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
+		bot.Send(msg)
+		log.Warn.Println("Error in getting file url", err.Error())
+	}
+
+	resp, ierr := i.UploadImage(imgUrl, u.CallbackQuery.Message.Text, user.AccessToken)
+	if ierr != nil {
+		ErrorMessage(u.Message.Chat.ID, ierr)
+		return
+	}
+
+	msgstr := "Image Uploaded\n"
+	msgstr += "URL: " + resp.Data.Link
+
+	msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+	msg.ReplyToMessageID = u.Message.MessageID
+	msg.DisableWebPagePreview = true
+
+	var emptyKeyboardRows [][]tbot.InlineKeyboardButton
+
+	msg.ReplyMarkup = tbot.InlineKeyboardMarkup{InlineKeyboard: emptyKeyboardRows}
+
+	bot.Send(msg)
+
+	fmt.Println(u.CallbackQuery.Message.Text)
+
 }
 
 func fetchUser(chatid int64) (*common.User, error) {
