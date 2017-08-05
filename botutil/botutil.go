@@ -36,6 +36,7 @@ func HandleCommands(u tbot.Update) {
 		bot.Send(msg)
 
 	case "/login":
+
 		msgstr := "Open this link in a browser to login:\n"
 
 		msgstr += i.AccessTokenString(strconv.FormatInt(u.Message.Chat.ID, 10) + "-" + u.Message.Chat.UserName)
@@ -134,12 +135,13 @@ func HandlePhoto(u tbot.Update) {
 	}
 
 	if len(albums.Data) > 0 {
+
 		msg := tbot.NewMessage(u.Message.Chat.ID, "Select an Album")
 
 		var rows [][]tbot.InlineKeyboardButton
 
-		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "<No Album>-------------------"+bestPhoto.FileID)
-		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "<Create Album>-------------------"+bestPhoto.FileID)
+		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "<No Album>--"+bestPhoto.FileID)
+		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "<Create Album>--"+bestPhoto.FileID)
 
 		row := [][]tbot.InlineKeyboardButton{{noalbumbtn, createbtn}}
 
@@ -147,7 +149,7 @@ func HandlePhoto(u tbot.Update) {
 
 		for i := 0; i < len(albums.Data); i++ {
 
-			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, albums.Data[i].Title+"-------------------"+bestPhoto.FileID)
+			button := tbot.NewInlineKeyboardButtonData(albums.Data[i].Title, albums.Data[i].Title+"--"+bestPhoto.FileID)
 
 			row := [][]tbot.InlineKeyboardButton{{button}}
 
@@ -155,7 +157,6 @@ func HandlePhoto(u tbot.Update) {
 		}
 
 		msg.ReplyMarkup = tbot.InlineKeyboardMarkup{InlineKeyboard: rows}
-
 		bot.Send(msg)
 	} else {
 		// User has no albums, Just upload the image,
@@ -179,6 +180,7 @@ func HandlePhoto(u tbot.Update) {
 		msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
 		msg.ReplyToMessageID = u.Message.MessageID
 		msg.DisableWebPagePreview = true
+
 		bot.Send(msg)
 	}
 }
@@ -187,7 +189,7 @@ func HandleCallbackQuery(u tbot.Update) {
 
 	chatID := u.CallbackQuery.Message.Chat.ID
 	messageID := u.CallbackQuery.Message.MessageID
-	datas := strings.Split(u.CallbackQuery.Data, "-------------------")
+	datas := strings.Split(u.CallbackQuery.Data, "--")
 	fileID := datas[1]
 	albumName := datas[0]
 

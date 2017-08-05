@@ -98,7 +98,7 @@ func main() {
 	}
 
 	if GO_ENV == "development" {
-		//bot.Debug = true
+		bot.Debug = true
 	}
 	log.Info.Printf("Authorized on account %s(@%s)\n", bot.Self.FirstName, bot.Self.UserName)
 
@@ -130,7 +130,8 @@ func main() {
 
 func handleUpdates(u tbot.Update) {
 
-	if u.Message != nil && u.Message.Text != "" {
+	if u.Message != nil && u.Message.IsCommand() {
+		botutil.HandleCommands(u)
 		return
 	}
 
@@ -144,10 +145,6 @@ func handleUpdates(u tbot.Update) {
 		fmt.Println(u.CallbackQuery.Data, u.CallbackQuery.Message.Text)
 	}
 
-	if u.Message != nil && u.Message.IsCommand() {
-		botutil.HandleCommands(u)
-		return
-	}
 }
 
 func fetchUpdates(bot *tbot.BotAPI) tbot.UpdatesChannel {
