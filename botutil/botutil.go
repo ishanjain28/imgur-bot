@@ -242,12 +242,11 @@ func HandleCallbackQuery(u tbot.Update) {
 	msgstr += "Album: " + albums.Data[albumIndex].Title + "\n"
 	msgstr += "URL: " + resp.Data.Link
 
-	msg, err := bot.AnswerCallbackQuery(tbot.CallbackConfig{CallbackQueryID: u.CallbackQuery.ID, Text: msgstr})
+	msg1, err := bot.DeleteMessage(tbot.DeleteMessageConfig{MessageID: messageID, ChatID: chatID})
+	fmt.Println(msg1)
+	msg := tbot.NewMessage(chatID, msgstr)
+	bot.Send(msg)
 
-	editmsg := tbot.NewEditMessageReplyMarkup(chatID, messageID, tbot.InlineKeyboardMarkup{})
-	bot.Send(editmsg)
-
-	fmt.Println(msg, err)
 }
 
 func fetchUser(chatid int64) (*common.User, error) {
