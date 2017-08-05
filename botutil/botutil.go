@@ -225,8 +225,6 @@ func HandleCallbackQuery(u tbot.Update) {
 		log.Warn.Println("Error in getting file url", err.Error())
 	}
 
-	albumName := albums.Data[albumIndex].Title
-
 	imgUrl, err := bot.GetFileDirectURL(fileID)
 	if err != nil {
 		msg := tbot.NewMessage(chatID, "error in uploading image, Please retry")
@@ -234,14 +232,14 @@ func HandleCallbackQuery(u tbot.Update) {
 		log.Warn.Println("Error in getting file url", err.Error())
 	}
 
-	resp, ierr := i.UploadImage(imgUrl, albumName, user.AccessToken)
+	resp, ierr := i.UploadImage(imgUrl, albums.Data[albumIndex].ID, user.AccessToken)
 	if ierr != nil {
 		ErrorMessage(chatID, ierr)
 		return
 	}
 
 	msgstr := "Image Uploaded\n"
-	msgstr += "Album: " + albumName + "\n"
+	msgstr += "Album: " + albums.Data[albumIndex].Title + "\n"
 	msgstr += "URL: " + resp.Data.Link
 
 	msg, err := bot.AnswerCallbackQuery(tbot.CallbackConfig{CallbackQueryID: u.CallbackQuery.ID, Text: msgstr})
