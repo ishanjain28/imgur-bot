@@ -140,9 +140,8 @@ func HandlePhoto(u tbot.Update) {
 		var rows [][]tbot.InlineKeyboardButton
 
 		noalbumbtn := tbot.NewInlineKeyboardButtonData("<No Album>", "-1\\"+bestPhoto.FileID)
-		createbtn := tbot.NewInlineKeyboardButtonData("<Create Album>", "-2\\"+bestPhoto.FileID)
 
-		row := [][]tbot.InlineKeyboardButton{{noalbumbtn, createbtn}}
+		row := [][]tbot.InlineKeyboardButton{{noalbumbtn}}
 
 		rows = append(rows, row...)
 
@@ -217,11 +216,16 @@ func HandleCallbackQuery(u tbot.Update) {
 		return
 	}
 
-	albums, ierr := i.Albums(user.Username, user.AccessToken)
-	if err != nil {
-		msg := tbot.NewMessage(chatID, "Error: "+ierr.String())
-		bot.Send(msg)
-		log.Warn.Println("Error in getting file url", err.Error())
+	var albums *imgur.Album
+	var ierr *imgur.IError
+	var resp *imgur.Image
+	if albumIndex >= 0 {
+		albums, ierr = i.Albums(user.Username, user.AccessToken)
+		if err != nil {
+			msg := tbot.NewMessage(chatID, "Error: "+ierr.String())
+			bot.Send(msg)
+			log.Warn.Println("Error in getting file url", err.Error())
+		}
 	}
 
 	imgUrl, err := bot.GetFileDirectURL(fileID)
@@ -230,15 +234,24 @@ func HandleCallbackQuery(u tbot.Update) {
 		bot.Send(msg)
 		log.Warn.Println("Error in getting file url", err.Error())
 	}
+	msgstr := "Image Uploaded\n"
 
-	resp, ierr := i.UploadImage(imgUrl, albums.Data[albumIndex].ID, user.AccessToken)
-	if ierr != nil {
-		ErrorMessage(chatID, ierr)
-		return
+	if albumIndex >= 0 {
+		msgstr += "Album: " + albums.Data[albumIndex].Title + "\n"
+
+		resp, ierr = i.UploadImage(imgUrl, albums.Data[albumIndex].ID, user.AccessToken)
+		if ierr != nil {
+			ErrorMessage(chatID, ierr)
+			return
+		}
+	} else {
+		resp, ierr = i.UploadImage(imgUrl, "", user.AccessToken)
+		if ierr != nil {
+			ErrorMessage(chatID, ierr)
+			return
+		}
 	}
 
-	msgstr := "Image Uploaded\n"
-	msgstr += "Album: " + albums.Data[albumIndex].Title + "\n"
 	msgstr += "URL: " + resp.Data.Link
 
 	// Delete the inline keyboard
