@@ -184,14 +184,14 @@ func HandlePhoto(u tbot.Update) {
 }
 
 func HandleCallbackQuery(u tbot.Update) {
-	user, err := fetchUser(u.Message.Chat.ID)
+	user, err := fetchUser(u.CallbackQuery.Message.Chat.ID)
 	if err != nil {
 		if err == redis.Nil {
-			UserNotLoggedIn(u.Message.Chat.ID)
+			UserNotLoggedIn(u.CallbackQuery.Message.Chat.ID)
 			return
 		}
 
-		msg := tbot.NewMessage(u.Message.Chat.ID, "Error Occurred, Please retry")
+		msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, "Error Occurred, Please retry")
 		bot.Send(msg)
 		log.Warn.Println("error in fetching user", err.Error())
 		return
@@ -201,21 +201,21 @@ func HandleCallbackQuery(u tbot.Update) {
 
 	imgUrl, err := bot.GetFileDirectURL(fileID)
 	if err != nil {
-		msg := tbot.NewMessage(u.Message.Chat.ID, "error in uploading image, Please retry")
+		msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, "error in uploading image, Please retry")
 		bot.Send(msg)
 		log.Warn.Println("Error in getting file url", err.Error())
 	}
 
 	resp, ierr := i.UploadImage(imgUrl, u.CallbackQuery.Message.Text, user.AccessToken)
 	if ierr != nil {
-		ErrorMessage(u.Message.Chat.ID, ierr)
+		ErrorMessage(u.CallbackQuery.Message.Chat.ID, ierr)
 		return
 	}
 
 	msgstr := "Image Uploaded\n"
 	msgstr += "URL: " + resp.Data.Link
 
-	msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+	msg := tbot.NewMessage(u.CallbackQuery.Message.Chat.ID, msgstr)
 	msg.ReplyToMessageID = u.Message.MessageID
 	msg.DisableWebPagePreview = true
 
