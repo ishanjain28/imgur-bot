@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"github.com/ishanjain28/imgur-bot/log"
 	"strings"
-	"fmt"
 )
 
 var (
@@ -242,9 +241,11 @@ func HandleCallbackQuery(u tbot.Update) {
 	msgstr += "Album: " + albums.Data[albumIndex].Title + "\n"
 	msgstr += "URL: " + resp.Data.Link
 
-	msg1, err := bot.DeleteMessage(tbot.DeleteMessageConfig{MessageID: messageID, ChatID: chatID})
-	fmt.Println(msg1)
+	// Delete the inline keyboard
+	bot.DeleteMessage(tbot.DeleteMessageConfig{MessageID: messageID, ChatID: chatID})
+
 	msg := tbot.NewMessage(chatID, msgstr)
+	msg.DisableWebPagePreview = true
 	bot.Send(msg)
 
 }
