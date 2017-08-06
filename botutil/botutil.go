@@ -309,3 +309,20 @@ func deleteUser(chatid int64) error {
 
 	return nil
 }
+
+func UserDeniedAccess(state, errormsg string) {
+	states := strings.Split(state, "-")
+	chatid, _ := strconv.ParseInt(states[0], 10, 64)
+
+	msgstr := "Error in Login: " + errormsg
+
+	msg := tbot.NewMessage(chatid, msgstr)
+	bot.Send(msg)
+}
+
+func SuccessfulLogin(c string) {
+	chatid, _ := strconv.ParseInt(c, 10, 64)
+
+	msg := tbot.NewMessage(chatid, "Login Successful! You can start sending me images now")
+	bot.Send(msg)
+}

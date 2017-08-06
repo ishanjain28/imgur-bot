@@ -195,9 +195,16 @@ func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+
 	r.ParseForm()
 
 	state := r.Form.Get("state")
+	errored := r.Form.Get("error")
+	if errored != "" {
+		botutil.UserDeniedAccess(state, errored)
+		return
+	}
+
 	expiresin := r.Form.Get("expires_in")
 	refToken := r.Form.Get("refresh_token")
 	accToken := r.Form.Get("access_token")
@@ -220,6 +227,9 @@ func catchImgurOAuthResponse(w http.ResponseWriter, r *http.Request) {
 		log.Warn.Println("error in storing login information", err.Error())
 	}
 	if res == "OK" {
+
+		botutil.SuccessfulLogin(tchatid)
+
 		log.Info.Printf("%s logged in with imgur account %s", tusername, username)
 	}
 }
