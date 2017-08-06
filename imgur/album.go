@@ -7,7 +7,7 @@ import (
 
 func (i *Imgur) Albums(username, accessToken string) (*Album, *IError) {
 	//Skipping a page parameter here, It can be used to get only a limited number of albums
-	resp, ierr := makeAuthorisedRequest("GET", "/3/account/"+username+"/albums/", "a58380fec576d84e981ed26044e1fffccaeb16a2", "access_token", "")
+	resp, ierr := makeAuthorisedRequest("GET", "/3/account/"+username+"/albums/", accessToken, "access_token", "")
 	if ierr != nil {
 		return nil, ierr
 	}
