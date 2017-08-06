@@ -19,7 +19,7 @@ var (
 	GO_ENV              = ""
 	PORT                = ""
 	TOKEN               = ""
-	HOST                = "chinguimgurbot.herokuapp.com"
+	HOST                = ""
 	IMGUR_CLIENT_ID     = ""
 	IMGUR_CLIENT_SECRET = ""
 	REDIS_URL           = ""
@@ -60,7 +60,12 @@ func init() {
 
 	REDIS_URL = os.Getenv("REDISTOGO_URL")
 	if REDIS_URL == "" {
-		log.Error.Fatalln("$REDISTOGO_URLr not set")
+		log.Error.Fatalln("$REDISTOGO_URL not set")
+	}
+
+	HOST = os.Getenv("HOST")
+	if HOST == "" {
+		log.Error.Fatalln("$HOST not set")
 	}
 }
 

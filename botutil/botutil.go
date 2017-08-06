@@ -27,19 +27,20 @@ func Init(b *tbot.BotAPI, Imgur *imgur.Imgur, rClient *redis.Client) {
 // Handle Commands
 func HandleCommands(u tbot.Update) {
 	cmdArray := strings.Split(u.Message.Text, " ")
+	chatID := u.Message.Chat.ID
 
 	switch cmdArray[0] {
 	case "/start":
 
-		msg := tbot.NewMessage(u.Message.Chat.ID, "")
+		msg := tbot.NewMessage(chatID, "@chinguimgurbot helps in uploading images to imgur.com and in checking stats.\n")
 		bot.Send(msg)
 
 	case "/login":
 
 		msgstr := "Open this link in a browser to login:\n"
 
-		msgstr += i.AccessTokenString(strconv.FormatInt(u.Message.Chat.ID, 10) + "-" + u.Message.Chat.UserName)
-		msg := tbot.NewMessage(u.Message.Chat.ID, msgstr)
+		msgstr += i.AccessTokenString(strconv.FormatInt(chatID, 10) + "-" + u.Message.Chat.UserName)
+		msg := tbot.NewMessage(chatID, msgstr)
 		msg.DisableWebPagePreview = true
 		bot.Send(msg)
 
@@ -49,26 +50,26 @@ func HandleCommands(u tbot.Update) {
 		if len(cmdArray) > 1 {
 			stats, err := i.AccountBase(cmdArray[1], "")
 			if err != nil {
-				ErrorMessage(u.Message.Chat.ID, err)
+				ErrorMessage(chatID, err)
 				return
 			}
 
 			//Create a new common.User with just the username
 			user := &common.User{Username: cmdArray[1]}
 
-			UserStatsMessage(u.Message.Chat.ID, stats, nil, nil, user)
+			UserStatsMessage(chatID, stats, nil, nil, user)
 			return
 		}
 
 		// Fetch user from database
-		user, err := fetchUser(u.Message.Chat.ID)
+		user, err := fetchUser(chatID)
 		if err != nil {
 			if err == redis.Nil {
-				UserNotLoggedIn(u.Message.Chat.ID)
+				UserNotLoggedIn(chatID)
 				return
 			}
 
-			msg := tbot.NewMessage(u.Message.Chat.ID, "error in fetching user "+err.Error())
+			msg := tbot.NewMessage(chatID, "error in fetching user "+err.Error())
 			bot.Send(msg)
 			log.Warn.Println("error in fetching user", err.Error())
 			return
@@ -76,28 +77,49 @@ func HandleCommands(u tbot.Update) {
 
 		stats, ierr := i.AccountBase(user.Username, "")
 		if ierr != nil {
-			ErrorMessage(u.Message.Chat.ID, ierr)
+			ErrorMessage(chatID, ierr)
 			return
 		}
 
 		cCount, ierr := i.CommentCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			ErrorMessage(u.Message.Chat.ID, ierr)
+			ErrorMessage(chatID, ierr)
 			return
 		}
 
 		iCount, ierr := i.ImageCount(user.Username, user.AccessToken)
 		if ierr != nil {
-			ErrorMessage(u.Message.Chat.ID, ierr)
+			ErrorMessage(chatID, ierr)
 			return
 		}
 
-		UserStatsMessage(u.Message.Chat.ID, stats, cCount, iCount, user)
+		UserStatsMessage(chatID, stats, cCount, iCount, user)
 
 	case "/logout":
+
+		err := deleteUser(chatID)
+		if err != nil {
+			msg := tbot.NewMessage(chatID, "Error in signing out, Please retry")
+			bot.Send(msg)
+			return
+		}
+
+		msg := tbot.NewMessage(chatID, "Successfully logged out")
+		bot.Send(msg)
+
 	case "/help":
+
+		msgstr := "@chinguimgurbot helps in uploading images to imgur.com and in checking stats.\n"
+		msgstr += "To get started, You need to /login\n"
+		msgstr += "After logging in, You can upload images by sending it an image or check stats using /stats command"
+		msgstr += "You can also check someone else's stats using /stats <A imgur username>"
+
+		msg := tbot.NewMessage(chatID, msgstr)
+
+		bot.Send(msg)
+
 	default:
-		msg := tbot.NewMessage(u.Message.Chat.ID, "Unknown Command, Type /help to get help")
+		msg := tbot.NewMessage(chatID, "Unknown Command, Type /help to get help")
 		bot.Send(msg)
 	}
 }
@@ -276,4 +298,14 @@ func fetchUser(chatid int64) (*common.User, error) {
 		return nil, err
 	}
 	return a, nil
+}
+
+func deleteUser(chatid int64) error {
+	chatidStr := strconv.FormatInt(chatid, 10)
+	_, err := redisClient.Del(chatidStr).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
